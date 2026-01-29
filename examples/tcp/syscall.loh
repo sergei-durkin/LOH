@@ -1,0 +1,59 @@
+type sockaddr_in struct {
+    family int16
+    port int16
+    in_addr int32
+    pad int64
+}
+
+type kv struct {
+    ident int64
+    filter int16
+    flags int16
+    fflags int32
+    data int64
+    udata ptr
+}
+
+fn read(p *ptr, n int) int {
+    return syscall(3, 0, p, n)
+}
+
+fn write(fd int, ptr *int, len int) int {
+    return syscall(4, fd, ptr, len)
+}
+
+fn kevent(kq int64, e ptr, ln int, events ptr, nevents int, timeout ptr) int {
+    return syscall(363, kq, e, ln, events, nevents, timeout)
+}
+
+fn kqueue() int {
+    return syscall(362)
+}
+
+fn close(socket int) int {
+    return syscall(6, socket)
+}
+
+fn recv(socket int, buf *ptr, ln int, flags int) int {
+    return syscall(29, socket, buf, ln, flags, 0, 0)
+}
+
+fn accept(socket int, addr ptr, len int) int {
+    return syscall(30, socket, addr, len)
+}
+
+fn listen(socket int, backlog int) int {
+    return syscall(106, socket, backlog)
+}
+
+fn bind(socket int, addr ptr, len int) int {
+    return syscall(104, socket, addr, len)
+}
+
+fn tcp() int {
+    return socket(2, 1, 0)
+}
+
+fn socket(d int, t int, p int) int {
+    return syscall(97, d,t,p)
+}

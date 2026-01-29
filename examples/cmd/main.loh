@@ -1,0 +1,45 @@
+fn main() int {
+    var t int64 = 9223372036854775807
+    var t2 int64 = 9223372036854775807
+
+    if false {
+        return 0
+    }
+
+    return printInt(0-t2) == true
+}
+
+fn test(n int64)int64{
+    return -n
+}
+
+fn printInt(n int64) int {
+    var num int64 = n
+    var arr [21]byte
+    var ln int = 20
+    var neg bool = false
+
+    if num < 0 {
+        num = test(n)
+        neg = true
+    }
+
+    if num == 0 {
+        arr[20] = '0'
+        ln--
+    }
+    
+    for var i int64 = num; i > 0; i = i/10 {
+        arr[ln] = (i%10)+'0'
+        ln--
+    }
+    
+    if neg {
+        arr[ln] = '-'
+        ln--
+    }
+
+    var v int = syscall(4,1,&arr[ln+1],20-ln)
+
+    return v
+}

@@ -1,0 +1,121 @@
+fn serve() int {
+    var serverr []byte = "err on tcp"
+    var binderr []byte = "err on bind"
+    var listenerr []byte = "err on listen"
+    var recvok []byte = "received"
+
+    var addr sockaddr_in = sockaddr_in{
+        family: 2,
+        port: 36895,
+        in_addr: 0,
+        pad: 0,
+    }
+    var server int = tcp()
+    if server < 0 {
+        println(&serverr, strlen(serverr))
+        return 1
+    }
+    
+    var err int = bind(server, &addr, 16)
+    if err != 0 {
+        close(server)
+        println(&binderr, strlen(binderr))
+        return err
+    }
+
+    var errl int = listen(server, 1)
+    if errl != 0 {
+        close(server)
+        println(&listenerr, strlen(listenerr))
+        return 1
+    }
+
+    return listenTCP(server)
+}
+
+fn listenTCP(server int64) int {
+    var accepterr []byte = "err on accept"
+    var nocontent []byte = "No content"
+
+    var kq int64 = kqueue()
+    
+    var e kv = kv{
+        ident: server,
+        filter: -1,
+        flags: 5,
+        fflags: 0,
+        data: 0,
+        udata: 0,
+    }
+
+    kevent(kq, &e, 1, 0, 0, 0)
+
+    var in kv = kv{
+        ident: 0,
+        filter: -1,
+        flags: 5,
+        fflags: 0,
+        data: 0,
+        udata: 0,
+    }
+
+    kevent(kq, &in, 1, 0, 0, 0)
+
+    var event kv = kv{
+        ident: 0,
+        filter: 0,
+        flags: 0,
+        fflags: 0,
+        data: 0,
+        udata: 0,
+    }
+
+    var buf [1024]byte
+    for ;1; {
+        kevent(kq, 0, 0, &event, 1, 0)
+        if event.ident == server {
+            var client int = accept(server, 0, 0)
+            if client < 0 {
+                close(server)
+                return 1
+            }
+
+            var e2 kv = kv{
+                ident: client,
+                filter: -1,
+                flags: 5,
+                fflags: 0,
+                data: 0,
+                udata: 0,
+            }
+            kevent(kq, &e2, 1, 0, 0, 0)
+        } else if event.ident == 0 {
+            var b [1]byte
+            var n int = read(&b, 1)
+            if n == 0 {
+                var v []byte = "Ctrl-D; exit;"
+                println(&v, strlen(v))
+                break
+            }
+        } else {
+            var ln int = recv(event.ident, &buf, 1024, 0)
+            if ln == 0 {
+                println(&nocontent, strlen(nocontent))
+            } else {
+                printlnInt(ln)
+                println(&buf, ln)
+
+                reverse(&buf, ln-1)
+
+                write(event.ident, &buf, ln)
+            }
+
+            close(event.ident)
+        }
+    }
+    close(server)
+    close(kq)
+
+    return 0
+}
+

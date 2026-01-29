@@ -1,0 +1,57 @@
+fn strlen(p *ptr) int {
+    var buf byte = p
+    var i int = 0
+    for ;buf[i] != 0;i++{}
+
+    return i
+}
+
+fn len(num int) int {
+    var ln int = 0
+    for var i int = num; i > 0; i = i/10 {
+        ln = ln+1
+    }
+    return ln
+}
+
+fn println(p *ptr, n int) int {
+    var str byte = p
+    var ln int = n+1
+    var arr [ln]byte
+
+    for var i int = 0; i < n; i++ {
+        arr[i] = str[i]
+    }
+    arr[n] = '\n'
+
+    return syscall(4,1,&arr,ln)
+}
+
+fn printlnInt(num int) int {
+    var n int = len(num)
+    var k int = n + 1
+    var arr [k]byte
+    var ln int = n-1
+    for var i int = num; i > 0; i = i/10 {
+        arr[ln] = (i%10)+'0'
+        ln--
+    }
+
+    arr[n] = '\n'
+
+    syscall(4,1,&arr,k)
+    return k
+}
+
+fn reverse(p *ptr, n int) int {
+    var s byte = p
+    var j int = n-1
+    for var i int = 0; i < j; i++ {
+        var t byte = s[i]
+        s[i] = s[j]
+        s[j] = t
+        j--
+    }
+
+    return n
+}
