@@ -76,7 +76,7 @@ func legal(b []*BasicBlock, n int) {
 				if !swap2(instr, &instrs) {
 					tmp(instr, &instrs)
 				}
-			case *SUM:
+			case *SUM, *CMP:
 				if !swap3(instr, &instrs) {
 					tmp(instr, &instrs)
 				}
