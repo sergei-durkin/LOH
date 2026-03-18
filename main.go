@@ -19,7 +19,8 @@ func main() {
 	buf := loadBuf()
 	ast, err := parser.Parse(buf)
 	if err != nil {
-		panic(err)
+		parser.PrintSyntaxError(err, buf)
+		os.Exit(1)
 	}
 
 	if len(os.Args) > 3 && os.Args[3] == "print=ast" {

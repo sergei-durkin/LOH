@@ -10,28 +10,28 @@ func (s *syntaxer) parseConstDecl() (ast.Stmt, error) {
 	const fn = "parseConstDecl"
 
 	if s.peek().Token() != token.CONST {
-		return nil, fmt.Errorf("[%s] expected token.CONST", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.CONST", fn), s.peek())
 	}
 	s.consume()
 
 	pos := s.cur.Pos()
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected token.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 	}
 	s.consume()
 
 	name := s.lex.GetValue(s.cur)
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected token.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 	}
 	s.consume()
 
 	typeName := s.lex.GetValue(s.cur)
 
 	if s.peek().Token() != token.ASSIGN {
-		return nil, fmt.Errorf("[%s] expected =", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected =", fn), s.peek())
 	}
 	s.consume()
 
@@ -41,7 +41,7 @@ func (s *syntaxer) parseConstDecl() (ast.Stmt, error) {
 
 	value, err := s.parseExpr(token.LowestPrec)
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse err: %w", fn, err), s.peek())
 	}
 
 	return ast.NewConstDecl(pos, name, typeName, value), nil

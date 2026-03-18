@@ -11,31 +11,31 @@ func (s *syntaxer) parseFnDecl() (ast.Stmt, error) {
 	const fn = "parseFnDecl"
 
 	if s.peek().Token() != token.FN {
-		return nil, fmt.Errorf("[%s] expected token.FN", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.FN", fn), s.peek())
 	}
 	s.consume()
 
 	pos := s.cur.Pos()
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected token.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 	}
 	s.consume()
 
 	name := s.lex.GetValue(s.cur)
 
 	if s.peek().Token() != token.LPAR {
-		return nil, fmt.Errorf("[%s] expected (", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected (", fn), s.peek())
 	}
 	s.consume()
 
 	args, err := s.parseFnArgsDecl()
 	if err != nil {
-		return nil, fmt.Errorf("[%s] error parse args: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] error parse args: %w", fn, err), s.peek())
 	}
 
 	if s.peek().Token() != token.RPAR {
-		return nil, fmt.Errorf("[%s] expected ) at pos %d", fn, s.peek().Pos())
+		return nil, WrapErr(fmt.Errorf("[%s] expected ) at pos %d", fn, s.peek().Pos()), s.peek())
 	}
 	s.consume()
 
@@ -59,7 +59,7 @@ func (s *syntaxer) parseFnDecl() (ast.Stmt, error) {
 
 	block, err := s.parseBlockStmts()
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parseStmt err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parseStmt err: %w", fn, err), s.peek())
 	}
 
 	return ast.NewFnDecl(pos, name, args, rt, *block), nil
@@ -71,7 +71,7 @@ func (s *syntaxer) parseBlockStmts() (*ast.BlockStmt, error) {
 	pos := s.cur.Pos()
 
 	if s.peek().Token() != token.LBRACE {
-		return nil, fmt.Errorf("[%s] expected { but %s given", fn, s.peek().Token().String())
+		return nil, WrapErr(fmt.Errorf("[%s] expected { but %s given", fn, s.peek().Token().String()), s.peek())
 	}
 	s.consume()
 
@@ -83,7 +83,7 @@ func (s *syntaxer) parseBlockStmts() (*ast.BlockStmt, error) {
 	for s.peek().Token() != token.RBRACE {
 		stmt, err := s.parseStmt()
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parseStmt err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parseStmt err: %w", fn, err), s.peek())
 		}
 
 		stmts = append(stmts, stmt)
@@ -94,7 +94,7 @@ func (s *syntaxer) parseBlockStmts() (*ast.BlockStmt, error) {
 	}
 
 	if s.peek().Token() != token.RBRACE {
-		return nil, fmt.Errorf("[%s] expected }", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected }", fn), s.peek())
 	}
 	s.consume()
 
@@ -107,7 +107,7 @@ func (s *syntaxer) parseFnArgsDecl() ([]*ast.FnArgDecl, error) {
 	args := []*ast.FnArgDecl{}
 	for s.peek().Token() != token.RPAR {
 		if s.peek().Token() != token.ID {
-			return nil, fmt.Errorf("[%s] expected token.ID", fn)
+			return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 		}
 		s.consume()
 
@@ -124,7 +124,7 @@ func (s *syntaxer) parseFnArgsDecl() ([]*ast.FnArgDecl, error) {
 			op := s.cur.Token()
 
 			if s.peek().Token() != token.ID {
-				return nil, fmt.Errorf("[%s] expected token.ID", fn)
+				return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 			}
 			s.consume()
 

@@ -12,13 +12,13 @@ func (s *syntaxer) parseExpr(bp int) (ast.Expr, error) {
 
 	left, err := s.parseNud(bp)
 	if err != nil {
-		return nil, fmt.Errorf("[%s] lhs parse err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] lhs parse err: %w", fn, err), s.peek())
 	}
 
 	for bp < s.peek().Token().Priority() {
 		left, err = s.parseLed(left)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] led parse err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] led parse err: %w", fn, err), s.peek())
 		}
 	}
 
@@ -60,7 +60,7 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 
 		lit, err := strconv.ParseInt(s.lex.GetValue(s.cur), 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] err parse num: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] err parse num: %w", fn, err), s.peek())
 		}
 
 		return ast.NewNumberLitExpr(s.cur.Pos(), lit), nil
@@ -84,7 +84,7 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 
 		right, err := s.parseExpr(token.UnaryPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewUnaryOp(pos, op, right), nil
@@ -96,7 +96,7 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 
 		right, err := s.parseExpr(token.UnaryPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewUnaryOp(pos, op, right), nil
@@ -108,7 +108,7 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 
 		right, err := s.parseExpr(token.UnaryPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewUnaryOp(pos, op, right), nil
@@ -121,7 +121,7 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 		for s.peek().Token() != token.RBRACE {
 			elem, err := s.parseExpr(token.LowestPrec)
 			if err != nil {
-				return nil, fmt.Errorf("[%s] parse array elem led expr err: %w", fn, err)
+				return nil, WrapErr(fmt.Errorf("[%s] parse array elem led expr err: %w", fn, err), s.peek())
 			}
 			list = append(list, elem)
 
@@ -131,7 +131,7 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 		}
 
 		if s.peek().Token() != token.RBRACE {
-			return nil, fmt.Errorf("[%s] expected } at pos %d", fn, s.peek().Pos())
+			return nil, WrapErr(fmt.Errorf("[%s] expected } at pos %d", fn, s.peek().Pos()), s.peek())
 		}
 		s.consume()
 
@@ -141,11 +141,11 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 
 		expr, err := s.parseExpr(token.LowestPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse expr err: %w", fn, err), s.peek())
 		}
 
 		if s.peek().Token() != token.RPAR {
-			return nil, fmt.Errorf("[%s] expected ) at pos %d but given: (%s)", fn, s.peek().Pos(), s.peek().Token().String())
+			return nil, WrapErr(fmt.Errorf("[%s] expected ) at pos %d but given: (%s)", fn, s.peek().Pos(), s.peek().Token().String()), s.peek())
 		}
 		s.consume()
 
@@ -156,11 +156,11 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 		v := s.lex.GetValue(s.cur)
 		str, err := strconv.Unquote(v)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] unquote err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] unquote err: %w", fn, err), s.peek())
 		}
 
 		if len(str) > 1 && str[0] != '\\' {
-			return nil, fmt.Errorf("[%s] expected CHAR at pos %d but str given: (%s)", fn, s.peek().Pos(), s.peek().Token().String())
+			return nil, WrapErr(fmt.Errorf("[%s] expected CHAR at pos %d but str given: (%s)", fn, s.peek().Pos(), s.peek().Token().String()), s.peek())
 		}
 
 		return ast.NewNumberLitExpr(s.cur.Pos(), int64([]byte(str)[0])), nil
@@ -169,7 +169,7 @@ func (s *syntaxer) parseNud(bp int) (ast.Expr, error) {
 		fmt.Println(s.lex.GetValue(s.lookahead))
 	}
 
-	return nil, fmt.Errorf("[%s] unexpected token", fn)
+	return nil, WrapErr(fmt.Errorf("[%s] unexpected token", fn), s.peek())
 }
 
 func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
@@ -186,7 +186,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 			op = token.EQ
 
 			if s.peek().Token() != token.ASSIGN {
-				return nil, fmt.Errorf("[%s] expected = but given %s at pos %d", fn, s.peek().Token().String(), s.peek().Pos())
+				return nil, WrapErr(fmt.Errorf("[%s] expected = but given %s at pos %d", fn, s.peek().Token().String(), s.peek().Pos()), s.peek())
 			}
 			s.consume()
 		case token.LT:
@@ -210,7 +210,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 			op = token.NE
 
 			if s.peek().Token() != token.ASSIGN {
-				return nil, fmt.Errorf("[%s] expected = at pos %d", fn, s.peek().Pos())
+				return nil, WrapErr(fmt.Errorf("[%s] expected = at pos %d", fn, s.peek().Pos()), s.peek())
 			}
 			s.consume()
 		default:
@@ -219,7 +219,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 
 		right, err := s.parseExpr(op.Priority())
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse bin led expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse bin led expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewBinaryOp(pos, op, left, right), nil
@@ -239,7 +239,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 
 		right, err := s.parseExpr(op.Priority())
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse bin led expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse bin led expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewBinaryOp(pos, op, left, right), nil
@@ -253,7 +253,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 
 		right, err := s.parseExpr(op.Priority())
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse bin led expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse bin led expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewBinaryOp(pos, op, left, right), nil
@@ -273,7 +273,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 
 		right, err := s.parseExpr(op.Priority())
 		if err != nil {
-			return nil, fmt.Errorf("[%s] prse bin led expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] prse bin led expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewBinaryOp(pos, op, left, right), nil
@@ -285,7 +285,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 
 		right, err := s.parseExpr(op.Priority())
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse bin led expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse bin led expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewBinaryOp(pos, op, left, right), nil
@@ -302,7 +302,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 
 		right, err := s.parseExpr(op.Priority())
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse bin led expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse bin led expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewBinaryOp(pos, op, left, right), nil
@@ -319,7 +319,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 
 		right, err := s.parseExpr(op.Priority())
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse bin led expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse bin led expr err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewBinaryOp(pos, op, left, right), nil
@@ -330,7 +330,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 		for s.peek().Token() != token.RPAR {
 			arg, err := s.parseExpr(token.LowestPrec)
 			if err != nil {
-				return nil, fmt.Errorf("[%s] parse arg led expr err: %w", fn, err)
+				return nil, WrapErr(fmt.Errorf("[%s] parse arg led expr err: %w", fn, err), s.peek())
 			}
 			args = append(args, arg)
 
@@ -340,7 +340,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 		}
 
 		if s.peek().Token() != token.RPAR {
-			return nil, fmt.Errorf("[%s] expected ) at pos %d", fn, s.peek().Pos())
+			return nil, WrapErr(fmt.Errorf("[%s] expected ) at pos %d", fn, s.peek().Pos()), s.peek())
 		}
 		s.consume()
 
@@ -349,7 +349,7 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 		s.consume()
 
 		if s.peek().Token() != token.ID {
-			return nil, fmt.Errorf("[%s] expected ID at pos %d", fn, s.peek().Pos())
+			return nil, WrapErr(fmt.Errorf("[%s] expected ID at pos %d", fn, s.peek().Pos()), s.peek())
 		}
 		s.consume()
 
@@ -360,5 +360,5 @@ func (s *syntaxer) parseLed(left ast.Expr) (ast.Expr, error) {
 		s.print(s.lookahead)
 	}
 
-	return nil, fmt.Errorf("[%s] unexpected token", fn)
+	return nil, WrapErr(fmt.Errorf("[%s] unexpected token", fn), s.peek())
 }

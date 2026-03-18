@@ -10,7 +10,7 @@ func (s *syntaxer) parseCallExpr(left ast.Expr) (ast.Expr, error) {
 	const fn = "parseCallArgs"
 
 	if s.peek().Token() != token.LPAR {
-		return nil, fmt.Errorf("[%s] expected (", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected (", fn), s.peek())
 	}
 	s.consume()
 
@@ -18,7 +18,7 @@ func (s *syntaxer) parseCallExpr(left ast.Expr) (ast.Expr, error) {
 	for s.peek().Token() != token.RPAR {
 		expr, err := s.parseExpr(token.LowestPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse expr err: %w", fn, err), s.peek())
 		}
 
 		args = append(args, expr)
@@ -29,7 +29,7 @@ func (s *syntaxer) parseCallExpr(left ast.Expr) (ast.Expr, error) {
 	}
 
 	if s.peek().Token() != token.RPAR {
-		return nil, fmt.Errorf("[%s] expected )", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected )", fn), s.peek())
 	}
 	s.consume()
 

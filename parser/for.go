@@ -10,7 +10,7 @@ func (s *syntaxer) parseForStmt() (ast.Stmt, error) {
 	const fn = "parseForStmt"
 
 	if s.peek().Token() != token.FOR {
-		return nil, fmt.Errorf("[%s] expected token.IF", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.IF", fn), s.peek())
 	}
 	s.consume()
 
@@ -19,19 +19,19 @@ func (s *syntaxer) parseForStmt() (ast.Stmt, error) {
 	if s.peek().Token() == token.LBRACE {
 		body, err := s.parseBlockStmts()
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse block stmts err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse block stmts err: %w", fn, err), s.peek())
 		}
 		return ast.NewForStmt(pos, nil, nil, nil, *body), nil
 	}
 
 	init, condition, post, err := s.parseForHeader()
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse for header err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse for header err: %w", fn, err), s.peek())
 	}
 
 	body, err := s.parseBlockStmts()
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse block stmts err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse block stmts err: %w", fn, err), s.peek())
 	}
 
 	return ast.NewForStmt(pos, init, condition, post, *body), nil
@@ -42,21 +42,21 @@ func (s *syntaxer) parseForHeader() (ast.Stmt, ast.Expr, ast.Stmt, error) {
 
 	init, err := s.parseForInit()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("[%s] parse init stmt err: %w", fn, err)
+		return nil, nil, nil, WrapErr(fmt.Errorf("[%s] parse init stmt err: %w", fn, err), s.peek())
 	}
 
 	if s.peek().Token() != token.SCOL {
-		return nil, nil, nil, fmt.Errorf("[%s] expected ;", fn)
+		return nil, nil, nil, WrapErr(fmt.Errorf("[%s] expected ;", fn), s.peek())
 	}
 	s.consume()
 
 	condition, err := s.parseExpr(token.LowestPrec)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("[%s] parse expr err: %w", fn, err)
+		return nil, nil, nil, WrapErr(fmt.Errorf("[%s] parse expr err: %w", fn, err), s.peek())
 	}
 
 	if s.peek().Token() != token.SCOL {
-		return nil, nil, nil, fmt.Errorf("[%s] expected ;", fn)
+		return nil, nil, nil, WrapErr(fmt.Errorf("[%s] expected ;", fn), s.peek())
 	}
 	s.consume()
 
@@ -64,7 +64,7 @@ func (s *syntaxer) parseForHeader() (ast.Stmt, ast.Expr, ast.Stmt, error) {
 	if s.peek().Token() != token.LBRACE {
 		post, err = s.parseIDStmt()
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("[%s] parse post stmt err: %w", fn, err)
+			return nil, nil, nil, WrapErr(fmt.Errorf("[%s] parse post stmt err: %w", fn, err), s.peek())
 		}
 	}
 
@@ -80,6 +80,6 @@ func (s *syntaxer) parseForInit() (ast.Stmt, error) {
 	case token.ID:
 		return s.parseIDStmt()
 	default:
-		return nil, fmt.Errorf("unexpected token")
+		return nil, WrapErr(fmt.Errorf("unexpected token"), s.peek())
 	}
 }

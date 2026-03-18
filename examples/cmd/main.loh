@@ -2,11 +2,7 @@ fn main() int {
     var t int64 = 9223372036854775807
     var t2 int64 = 9223372036854775807
 
-    if false {
-        return 0
-    }
-
-    return printInt(0-t2) == true
+    return printInt(0-t2 == true
 }
 
 fn test(n int64)int64{

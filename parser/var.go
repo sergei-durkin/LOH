@@ -16,14 +16,14 @@ func (s *syntaxer) parseVarDecl() (ast.Stmt, error) {
 	}
 
 	if s.peek().Token() != token.VAR {
-		return nil, fmt.Errorf("[%s] expected lexer.VAR", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected lexer.VAR", fn), s.peek())
 	}
 	s.consume()
 
 	pos := s.cur.Pos()
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected lexer.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected lexer.ID", fn), s.peek())
 	}
 	s.consume()
 
@@ -31,7 +31,7 @@ func (s *syntaxer) parseVarDecl() (ast.Stmt, error) {
 
 	typ, err := s.parseVarDeclType()
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse typeDecl err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse typeDecl err: %w", fn, err), s.peek())
 	}
 
 	if s.peek().Token().IsTerm() {
@@ -39,13 +39,13 @@ func (s *syntaxer) parseVarDecl() (ast.Stmt, error) {
 	}
 
 	if s.peek().Token() != token.ASSIGN {
-		return nil, fmt.Errorf("[%s] expected =", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected =", fn), s.peek())
 	}
 	s.consume()
 
 	value, err := s.parseExpr(token.LowestPrec)
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse var decl err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse var decl err: %w", fn, err), s.peek())
 	}
 
 	return ast.NewVarDecl(pos, name, typ, value), nil
@@ -58,11 +58,11 @@ func (s *syntaxer) parseVarDeclType() (ast.Type, error) {
 
 	arrayDecl, ok, err := s.parseArrayDecl()
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse arrayDecl decl err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse arrayDecl decl err: %w", fn, err), s.peek())
 	}
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected lexer.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected lexer.ID", fn), s.peek())
 	}
 	s.consume()
 
@@ -96,24 +96,24 @@ func (s *syntaxer) parseArrayDecl() (arrLen ast.Expr, ok bool, err error) {
 
 	switch s.peek().Token() {
 	default:
-		return nil, false, fmt.Errorf("[%s] parse var decl expected num or id", fn)
+		return nil, false, WrapErr(fmt.Errorf("[%s] parse var decl expected num or id", fn), s.peek())
 	case token.NUM:
 		s.consume()
 		arr, err := strconv.ParseInt(s.lex.GetValue(s.cur), 10, 64)
 		if err != nil {
-			return nil, false, fmt.Errorf("[%s] parse var size decl err: %w", fn, err)
+			return nil, false, WrapErr(fmt.Errorf("[%s] parse var size decl err: %w", fn, err), s.peek())
 		}
 		arrLen = ast.NewNumberLitExpr(pos, arr)
 	case token.ID:
 		arrLen, err = s.parseExpr(token.LowestPrec)
 		if err != nil {
-			return nil, false, fmt.Errorf("[%s] parse var decl expr err: %w", fn, err)
+			return nil, false, WrapErr(fmt.Errorf("[%s] parse var decl expr err: %w", fn, err), s.peek())
 		}
 	case token.RSQBR:
 	}
 
 	if s.peek().Token() != token.RSQBR {
-		return nil, false, fmt.Errorf("[%s] expected ]", fn)
+		return nil, false, WrapErr(fmt.Errorf("[%s] expected ]", fn), s.peek())
 	}
 	s.consume()
 

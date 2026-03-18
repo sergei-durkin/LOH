@@ -10,7 +10,7 @@ func (s *syntaxer) parseIDExpr() (ast.Expr, error) {
 	const fn = "parseIDExpr"
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected token.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 	}
 	s.consume()
 
@@ -32,13 +32,13 @@ func (s *syntaxer) parseArrayAccessExpr(left ast.Expr) (ast.Expr, error) {
 	const fn = "parseArrayAccessExpr"
 
 	if s.peek().Token() != token.LSQBR {
-		return nil, fmt.Errorf("[%s] expected token.LBR", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.LBR", fn), s.peek())
 	}
 	s.consume()
 
 	expr, err := s.parseExpr(token.LowestPrec)
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse array access expr err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse array access expr err: %w", fn, err), s.peek())
 	}
 	s.consume()
 
@@ -49,12 +49,12 @@ func (s *syntaxer) parseMemberExpr(left ast.Expr) (ast.Expr, error) {
 	const fn = "parseMemberExpr"
 
 	if s.peek().Token() != token.DOT {
-		return nil, fmt.Errorf("[%s] expected token.DOT", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.DOT", fn), s.peek())
 	}
 	s.consume()
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected token.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 	}
 	s.consume()
 

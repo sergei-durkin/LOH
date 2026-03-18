@@ -11,26 +11,26 @@ func (s *syntaxer) parseStructDecl() (ast.Stmt, error) {
 	const fn = "parseStructDecl"
 
 	if s.peek().Token() != token.TYPE {
-		return nil, fmt.Errorf("[%s] expected lexer.STRUCT", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected lexer.STRUCT", fn), s.peek())
 	}
 	s.consume()
 
 	pos := s.cur.Pos()
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected lexer.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected lexer.ID", fn), s.peek())
 	}
 	s.consume()
 
 	name := s.lex.GetValue(s.cur)
 
 	if s.peek().Token() != token.STRUCT {
-		return nil, fmt.Errorf("[%s] expected `struct`", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected `struct`", fn), s.peek())
 	}
 	s.consume()
 
 	if s.peek().Token() != token.LBRACE {
-		return nil, fmt.Errorf("[%s] expected {", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected {", fn), s.peek())
 	}
 	s.consume()
 
@@ -41,7 +41,7 @@ func (s *syntaxer) parseStructDecl() (ast.Stmt, error) {
 	var fields []*ast.StructFieldDecl
 	for s.peek().Token() != token.RBRACE {
 		if s.peek().Token() != token.ID {
-			return nil, fmt.Errorf("[%s] expected lexer.ID", fn)
+			return nil, WrapErr(fmt.Errorf("[%s] expected lexer.ID", fn), s.peek())
 		}
 		s.consume()
 
@@ -49,7 +49,7 @@ func (s *syntaxer) parseStructDecl() (ast.Stmt, error) {
 		fname := s.lex.GetValue(s.cur)
 
 		if s.peek().Token() != token.ID {
-			return nil, fmt.Errorf("[%s] expected lexer.ID", fn)
+			return nil, WrapErr(fmt.Errorf("[%s] expected lexer.ID", fn), s.peek())
 		}
 		s.consume()
 
@@ -63,7 +63,7 @@ func (s *syntaxer) parseStructDecl() (ast.Stmt, error) {
 	}
 
 	if s.peek().Token() != token.RBRACE {
-		return nil, fmt.Errorf("[%s] expected } at pos %d", fn, s.peek().Pos())
+		return nil, WrapErr(fmt.Errorf("[%s] expected } at pos %d", fn, s.peek().Pos()), s.peek())
 	}
 	s.consume()
 
@@ -78,7 +78,7 @@ func (s *syntaxer) parseStructLitExpr(left ast.Expr) (ast.Expr, error) {
 	const fn = "parseStructLiteral"
 
 	if s.peek().Token() != token.LBRACE {
-		return nil, fmt.Errorf("[%s] expected { at pos %d", fn, s.peek().Pos())
+		return nil, WrapErr(fmt.Errorf("[%s] expected { at pos %d", fn, s.peek().Pos()), s.peek())
 	}
 	s.consume()
 
@@ -98,13 +98,13 @@ func (s *syntaxer) parseStructLitExpr(left ast.Expr) (ast.Expr, error) {
 		name := s.lex.GetValue(s.cur)
 
 		if s.peek().Token() != token.COL {
-			return nil, fmt.Errorf("[%s] expected : at pos %d", fn, s.peek().Pos())
+			return nil, WrapErr(fmt.Errorf("[%s] expected : at pos %d", fn, s.peek().Pos()), s.peek())
 		}
 		s.consume()
 
 		expr, err := s.parseExpr(token.LowestPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse expr err: %w", fn, err), s.peek())
 		}
 
 		if s.peek().Token() == token.COM {
@@ -127,7 +127,7 @@ func (s *syntaxer) parseStructLitExpr(left ast.Expr) (ast.Expr, error) {
 	}
 
 	if s.peek().Token() != token.RBRACE {
-		return nil, fmt.Errorf("[%s] expected } at pos %d", fn, s.peek().Pos())
+		return nil, WrapErr(fmt.Errorf("[%s] expected } at pos %d", fn, s.peek().Pos()), s.peek())
 	}
 	s.consume()
 

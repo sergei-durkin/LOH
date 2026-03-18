@@ -10,7 +10,7 @@ func (s *syntaxer) parseReturnStmt() (ast.Stmt, error) {
 	const fn = "parseReturnStmt"
 
 	if s.peek().Token() != token.RETURN {
-		return nil, fmt.Errorf("[%s] expected lexer.RETURN", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected lexer.RETURN", fn), s.peek())
 	}
 	s.consume()
 

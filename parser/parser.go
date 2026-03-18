@@ -8,6 +8,19 @@ import (
 	"loh/token"
 )
 
+type ParserError struct {
+	error
+
+	Lexeme *lexer.Lexeme
+}
+
+func WrapErr(err error, lexeme *lexer.Lexeme) error {
+	return &ParserError{
+		error:  err,
+		Lexeme: lexeme,
+	}
+}
+
 type syntaxer struct {
 	lex       *lexer.Lexer
 	cur       *lexer.Lexeme
@@ -35,7 +48,7 @@ func Parse(buf []byte) (*ast.AST, error) {
 	var decls []ast.Node
 	for cur, err := s.Next(); cur != nil || err != nil; cur, err = s.Next() {
 		if err != nil {
-			return nil, fmt.Errorf("[Parse] next token err: %w", err)
+			return nil, WrapErr(fmt.Errorf("[Parse] next token err: %w", err), s.peek())
 		}
 
 		decls = append(decls, cur)
@@ -62,7 +75,7 @@ func (s *syntaxer) Next() (ast.Node, error) {
 		return nil, nil
 	}
 
-	return nil, errors.New("unknown token")
+	return nil, WrapErr(errors.New("unknown token"), s.peek())
 }
 
 func (s *syntaxer) parseStmt() (ast.Stmt, error) {
@@ -97,7 +110,7 @@ func (s *syntaxer) parseStmt() (ast.Stmt, error) {
 		return s.parseBreak()
 	}
 
-	return nil, errors.New("unknown stmt")
+	return nil, WrapErr(errors.New("unknown stmt"), s.peek())
 }
 
 func (s *syntaxer) parseContinue() (ast.Stmt, error) {
@@ -116,7 +129,7 @@ func (s *syntaxer) parseStarIDStmt() (ast.Stmt, error) {
 	pos := s.cur.Pos()
 
 	if s.peek().Token() != token.STAR {
-		return nil, fmt.Errorf("[%s] expected token.STAR", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.STAR", fn), s.peek())
 	}
 	s.consume()
 
@@ -127,17 +140,17 @@ func (s *syntaxer) parseStarIDStmt() (ast.Stmt, error) {
 		s.consume()
 		left, err = s.parseExpr(token.LowestPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse member expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse member expr err: %w", fn, err), s.peek())
 		}
 
 		if s.peek().Token() != token.RPAR {
-			return nil, fmt.Errorf("[%s] expected )", fn)
+			return nil, WrapErr(fmt.Errorf("[%s] expected )", fn), s.peek())
 		}
 		s.consume()
 	} else {
 		left, err = s.parseIDExpr()
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse member expr err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse member expr err: %w", fn, err), s.peek())
 		}
 	}
 	left = ast.NewUnaryOp(pos, token.STAR, left)
@@ -148,14 +161,14 @@ func (s *syntaxer) parseStarIDStmt() (ast.Stmt, error) {
 
 		rhs, err := s.parseExpr(token.LowestPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse rhs err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse rhs err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewAssignStmt(left.Pos(), left, rhs), nil
 	case token.LPAR:
 		call, err := s.parseCallExpr(left)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse call err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse call err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewExprStmt(call.Pos(), call), nil
@@ -169,7 +182,7 @@ func (s *syntaxer) parseStarIDStmt() (ast.Stmt, error) {
 			return ast.NewExprStmt(left.Pos(), ast.NewPostIncOp(pos, left)), nil
 		}
 
-		return nil, fmt.Errorf("[%s] expected token.PLUS", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.PLUS", fn), s.peek())
 	case token.MINUS:
 		s.consume()
 		pos := s.cur.Pos()
@@ -180,22 +193,22 @@ func (s *syntaxer) parseStarIDStmt() (ast.Stmt, error) {
 			return ast.NewExprStmt(left.Pos(), ast.NewPostDecOp(pos, left)), nil
 		}
 
-		return nil, fmt.Errorf("[%s] expected token.MINUS", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.MINUS", fn), s.peek())
 	}
 
-	return nil, fmt.Errorf("[%s] unknown STMT", fn)
+	return nil, WrapErr(fmt.Errorf("[%s] unknown STMT", fn), s.peek())
 }
 
 func (s *syntaxer) parseIDStmt() (ast.Stmt, error) {
 	const fn = "ID"
 
 	if s.peek().Token() != token.ID {
-		return nil, fmt.Errorf("[%s] expected token.ID", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
 	}
 
 	left, err := s.parseIDExpr()
 	if err != nil {
-		return nil, fmt.Errorf("[%s] parse member expr err: %w", fn, err)
+		return nil, WrapErr(fmt.Errorf("[%s] parse member expr err: %w", fn, err), s.peek())
 	}
 
 	switch s.peek().Token() {
@@ -204,14 +217,14 @@ func (s *syntaxer) parseIDStmt() (ast.Stmt, error) {
 
 		rhs, err := s.parseExpr(token.LowestPrec)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse rhs err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse rhs err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewAssignStmt(left.Pos(), left, rhs), nil
 	case token.LPAR:
 		call, err := s.parseCallExpr(left)
 		if err != nil {
-			return nil, fmt.Errorf("[%s] parse call err: %w", fn, err)
+			return nil, WrapErr(fmt.Errorf("[%s] parse call err: %w", fn, err), s.peek())
 		}
 
 		return ast.NewExprStmt(call.Pos(), call), nil
@@ -225,7 +238,7 @@ func (s *syntaxer) parseIDStmt() (ast.Stmt, error) {
 			return ast.NewExprStmt(left.Pos(), ast.NewPostIncOp(pos, left)), nil
 		}
 
-		return nil, fmt.Errorf("[%s] expected token.PLUS", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.PLUS", fn), s.peek())
 	case token.MINUS:
 		s.consume()
 		pos := s.cur.Pos()
@@ -236,10 +249,10 @@ func (s *syntaxer) parseIDStmt() (ast.Stmt, error) {
 			return ast.NewExprStmt(left.Pos(), ast.NewPostDecOp(pos, left)), nil
 		}
 
-		return nil, fmt.Errorf("[%s] expected token.MINUS", fn)
+		return nil, WrapErr(fmt.Errorf("[%s] expected token.MINUS", fn), s.peek())
 	}
 
-	return nil, fmt.Errorf("[%s] unknown STMT", fn)
+	return nil, WrapErr(fmt.Errorf("[%s] unknown STMT", fn), s.peek())
 }
 
 func (s *syntaxer) peek() *lexer.Lexeme {
