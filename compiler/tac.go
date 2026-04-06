@@ -166,6 +166,7 @@ func (t *Tac) parseFn(fn *ast.FnDecl) {
 
 				size: int(args[i].Size()),
 			})
+			fmt.Println(args[i].Size(), args[i].Name())
 			regs++
 
 			continue
@@ -692,7 +693,7 @@ func (t *Tac) parseExpr(expr ast.Expr) Value {
 		v := &Var{name: expr.Value()}
 		size, ok := t.size[v.Name()]
 		if !ok {
-			panic(fmt.Sprintf("unknown type of var %s", v.Label()))
+			panic(fmt.Sprintf("unknown size of var %s", v.Label()))
 		}
 
 		tmp := t.temp()
@@ -713,16 +714,20 @@ func (t *Tac) parseExpr(expr ast.Expr) Value {
 	case *ast.NumberLitExpr:
 		return &IntConst{int: expr.Value()}
 	case *ast.StringLitExpr:
+		s := expr.Unquoted()
+		size := int64(len(s)) + 1
+
 		tmp := t.temp()
-		t.code = append(t.code, &Assign{
-			target: tmp,
-			op:     token.ASSIGN,
-			arg1:   &StringConst{string: expr.Value()},
-
-			size: -1,
-
-			isTemp: true,
+		t.code = append(t.code, &Alloca{
+			ptr:  tmp,
+			size: &IntConst{int: size},
 		})
+
+		for i := 0; i < len(s); i++ {
+			t.storeByte(tmp, i, s[i])
+		}
+		t.storeByte(tmp, len(s), 0)
+
 		return tmp
 	case *ast.BinaryOp:
 		l, r := t.parseExpr(expr.Left()), t.parseExpr(expr.Right())
