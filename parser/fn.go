@@ -117,6 +117,25 @@ func (s *syntaxer) parseFnArgsDecl() ([]*ast.FnArgDecl, error) {
 		switch s.peek().Token() {
 		default:
 			panic(fmt.Sprintf("unexpected token %d %s", s.peek().Token(), s.peek().Token().String()))
+		case token.LSQBR:
+			s.consume()
+			pos := s.cur.Pos()
+
+			if s.peek().Token() != token.RSQBR {
+				return nil, WrapErr(fmt.Errorf("[%s] expected ]", fn), s.peek())
+			}
+			s.consume()
+
+			if s.peek().Token() != token.ID {
+				return nil, WrapErr(fmt.Errorf("[%s] expected token.ID", fn), s.peek())
+			}
+			s.consume()
+
+			typeName := s.lex.GetValue(s.cur)
+			typeExpr := ast.NewIdentExpr(s.cur.Pos(), typeName)
+			size := types.Info(typeName).Size()
+
+			args = append(args, ast.NewFnArgDecl(pos, aname, typeExpr, size))
 		case token.STAR:
 			s.consume()
 

@@ -71,7 +71,7 @@ func (s *syntaxer) Next() (ast.Node, error) {
 		return s.parseStructDecl()
 	case token.FN:
 		return s.parseFnDecl()
-	case token.EOF:
+	case token.EOF, token.EOL, 0:
 		return nil, nil
 	}
 

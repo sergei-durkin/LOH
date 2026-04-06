@@ -1,12 +1,42 @@
+type string struct {
+    data []byte
+    len int
+}
+
 fn main() int {
     var t int64 = 9223372036854775807
     var t2 int64 = 9223372036854775807
 
-    if false == (t ^ t2) {
+    if true == (t ^ t2) {
         return 1
     }
 
-    return printInt(0-t2) == 1 == true
+
+    var str string = string{
+        data: "hello",
+        len: strlen(str.data),
+    }
+
+    return printStr(&str)
+}
+
+fn printStr(p *ptr) int {
+    var s string = p
+    return syscall(4,1,s.data,s.len)
+}
+
+fn strlen(str []byte) int {
+    var ln int = 0
+    for ;str[ln] != 0; ln++ {}
+
+    return ln
+}
+
+fn printString(str []byte) int {
+    var ln int = 0
+    for ;str[ln] != 0; ln++ {}
+
+    return syscall(4,1,str,ln)
 }
 
 fn test(n int64)int64{
