@@ -48,12 +48,27 @@ func (s *syntaxer) parseStructDecl() (ast.Stmt, error) {
 		fpos := s.cur.Pos()
 		fname := s.lex.GetValue(s.cur)
 
+		var isPtr bool
+		if s.peek().Token() == token.LSQBR {
+			s.consume()
+
+			if s.peek().Token() != token.RSQBR {
+				return nil, WrapErr(fmt.Errorf("[%s] expected ]", fn), s.peek())
+			}
+			s.consume()
+
+			isPtr = true
+		}
+
 		if s.peek().Token() != token.ID {
 			return nil, WrapErr(fmt.Errorf("[%s] expected lexer.ID", fn), s.peek())
 		}
 		s.consume()
 
 		ftyp := types.Info(s.lex.GetValue(s.cur))
+		if isPtr {
+			ftyp = types.Pointer
+		}
 
 		fields = append(fields, ast.NewStructFieldDecl(fpos, fname, ast.NewBasicType(s.cur.Pos(), ftyp)))
 
