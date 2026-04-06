@@ -1,57 +1,30 @@
-define TIMED
-	@start=$$(date +%s%N); \
-	$(1); \
-	end=$$(date +%s%N); \
-	elapsed=$$(echo "scale=3; ($$end - $$start)/1000000" | bc); \
-	echo "Elapsed: $$elapsed ms"
-endef
+arch := "aarch"
 
-ast:
-	$(call TIMED, make aast)
+build:
+	time go build main.go
 
-aast:
-	go run main.go main.loh main.s print=ast
+ast: build
+	time ./main -print=ast -arch=${arch}
 
-tac:
-	$(call TIMED, make _tac)
-	
-_tac:
-	go run main.go main.loh main.s print=tac
+tac: build
+	time ./main -print=tac -arch=${arch}
 
-asm:
-	$(call TIMED, make _asm)
+asm: build
+	time ./main -print=asm -arch=${arch}
 
-_asm:
-	go run main.go main.loh main.s print=asm
+cfg: build
+	time ./main -print=cfg -arch=${arch}
 
-cfg:
-	$(call TIMED, make _cfg)
+ssa: build
+	time ./main -print=ssa -arch=${arch}
 
-_cfg:
-	go run main.go main.loh main.s print=cfg
+lir: build
+	time ./main -print=lir -arch=${arch}
 
-ssa:
-	$(call TIMED, make _ssa)
-
-_ssa:
-	go run main.go main.loh main.s print=ssa
-
-llir:
-	$(call TIMED, make _llir)
-
-_llir:
-	go run main.go main.loh main.s print=lir
-
-aarch:
-	$(call TIMED, make _aarch)
-
-_aarch:
-	go run main.go main.loh main.s print=aarch
-
-compile:
-	go run main.go ./examples/cmd main.s
+compile: build
+	./main -input=./examples/cmd -output=main.s -arch=${arch}
 	as -o main.o main.s
 	ld -macos_version_min 15.1.0 -o main main.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e main -arch arm64
 	cat main.s
-	./main
-	
+	time ./main
+

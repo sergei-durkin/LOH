@@ -49,7 +49,7 @@ func (f *Fn) rename() {
 				s[v.name] = append(s[v.name], idx)
 				v.ver = idx
 			} else {
-				panic("noway")
+				// panic(instr.ptr)
 			}
 		}
 	}
