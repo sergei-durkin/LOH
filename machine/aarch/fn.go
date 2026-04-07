@@ -10,14 +10,14 @@ func (a *AARCH) saveRegisters(w io.Writer, fn machine.Function) {
 	regs := fn.CalleeSavedRegisters()
 	for len(regs) > 0 {
 		if len(regs) == 1 {
-			fmt.Fprintf(w, "\tSTR x%d, [SP, -16]!\n", regs[0])
+			fmt.Fprintf(w, "\tSTR X%d, [SP, #-16]!\n", regs[0])
 			break
 		}
 
-		r1, r2 := regs[0], regs[1]
+		r1, r2 := CalleeSavedRegister(int(regs[0])), CalleeSavedRegister(int(regs[1]))
 		regs = regs[2:]
 
-		fmt.Fprintf(w, "\tSTP x%d, x%d, [SP, -16]!\n", r1, r2)
+		fmt.Fprintf(w, "\tSTP %s, %s, [SP, #-16]!\n", r1, r2)
 	}
 }
 
@@ -27,14 +27,14 @@ func (a *AARCH) restoreRegisters(w io.Writer, fn machine.Function) {
 	res := []string{}
 	for len(regs) > 0 {
 		if len(regs) == 1 {
-			res = append(res, fmt.Sprintf("\tLDR x%d, [SP], 16\n", regs[0]))
+			res = append(res, fmt.Sprintf("\tLDR %s, [SP], #16\n", CalleeSavedRegister(int(regs[0]))))
 			break
 		}
 
-		r1, r2 := regs[0], regs[1]
+		r1, r2 := CalleeSavedRegister(int(regs[0])), CalleeSavedRegister(int(regs[1]))
 		regs = regs[2:]
 
-		res = append(res, fmt.Sprintf("\tLDP x%d, x%d, [SP], 16\n", r1, r2))
+		res = append(res, fmt.Sprintf("\tLDP %s, %s, [SP], #16\n", r1, r2))
 	}
 
 	for i := len(res) - 1; i >= 0; i-- {
@@ -49,7 +49,7 @@ func (a *AARCH) prolog(w io.Writer, fn machine.Function) {
 
 	a.saveRegisters(w, fn)
 
-	fmt.Fprint(w, "\tSTP X29, x30, [SP, -16]!\n")
+	fmt.Fprint(w, "\tSTP X29, X30, [SP, -16]!\n")
 	fmt.Fprint(w, "\tMOV X29, SP\n")
 	fmt.Fprintln(w)
 
@@ -77,7 +77,7 @@ func (a *AARCH) epilog(w io.Writer, fn machine.Function) {
 
 	fmt.Fprint(w, "\tMOV SP, X29\n")
 
-	fmt.Fprint(w, "\tLDP X29, x30, [SP], 16\n")
+	fmt.Fprint(w, "\tLDP X29, X30, [SP], 16\n")
 
 	a.restoreRegisters(w, fn)
 

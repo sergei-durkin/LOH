@@ -7,13 +7,12 @@ fn main() int {
     var t int64 = 9223372036854775807
     var t2 int64 = 9223372036854775807
 
-    if true == (t ^ t2) {
+    if (t ^ t2) {
         return 1
     }
 
-
     var str string = string{
-        data: "hello",
+        data: "Hello World!!",
         len: strlen(str.data),
     }
 
@@ -37,6 +36,10 @@ fn printString(str []byte) int {
     for ;str[ln] != 0; ln++ {}
 
     return syscall(4,1,str,ln)
+}
+
+fn test2(n int64)int64{
+    return n
 }
 
 fn test(n int64)int64{

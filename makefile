@@ -1,4 +1,4 @@
-arch := "aarch"
+arch := "riscv"
 
 build:
 	time go build main.go
@@ -20,6 +20,15 @@ ssa: build
 
 lir: build
 	time ./main -print=lir -arch=${arch}
+
+machine: build
+	./main -print=asm -arch=${arch} > program.s
+	riscv64-elf-as -march=rv32i -mabi=ilp32 -mno-relax program.s -o program.o
+	riscv64-elf-ld -m elf32lriscv -Ttext=0x00000000 -e 0 program.o -o program.elf
+	riscv64-elf-objcopy -O binary program.elf program.bin
+	riscv64-elf-objdump -d program.elf
+	xxd -e -g 4 -c 4 program.bin | awk '{print $$2}' > program
+	cat program
 
 compile: build
 	./main -input=./examples/cmd -output=main.s -arch=${arch}
