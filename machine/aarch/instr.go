@@ -13,35 +13,35 @@ func (a *AARCH) instruction(w io.Writer, instr machine.Instruction) {
 	default:
 		panic(fmt.Sprintf("undefined instruction: %T %+v", instr, instr))
 	case machine.AND:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tAND %s, %s, %s\n", a, b, c)
 	case machine.OR:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tORR %s, %s, %s\n", a, b, c)
 	case machine.XOR:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tEOR %s, %s, %s\n", a, b, c)
 	case machine.MUL:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tMUL %s, %s, %s\n", a, b, c)
 	case machine.SUM:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tADD %s, %s, %s\n", a, b, c)
 	case machine.DIV:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tSDIV %s, %s, %s\n", a, b, c)
 	case machine.MOD:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tSDIV %s, %s, %s\n", a, b, c)
 		fmt.Fprintf(w, "\tMSUB %s, %s, %s, %s\n", a, a, c, b)
 	case machine.SUB:
-		a, b, c := operand(w, a.frameSize, operands[0]), operand(w, a.frameSize, operands[1]), operand(w, a.frameSize, operands[2])
+		a, b, c := a.threeOp(w, operands)
 		fmt.Fprintf(w, "\tSUB %s, %s, %s\n", a, b, c)
 	case machine.CALL:
 		_ = operands
 		target := operands[0]
 		operands = operands[1:]
-		var reg int = 0
+		var reg = 0
 		for _, arg := range operands {
 			fmt.Fprintf(w, "\tMOV x%d, %s\n", reg, operand(w, a.frameSize, arg))
 			reg++
@@ -106,9 +106,9 @@ func operandWithSize(v machine.Value, size machine.RegisterSize) string {
 	default:
 		panic(fmt.Sprintf("undefined value: %T %+v", v, v))
 	case *machine.ArgReg:
-		return fmt.Sprintf("X%d", v.ID)
+		return ArgRegister(v.ID)
 	case *machine.Reg:
-		return fmt.Sprintf("%s%d", regsize(size), v.ID)
+		return fmt.Sprintf("%s%s", regSize(size), CalleeSavedRegister(v.ID)[1:])
 	case *machine.IntConst:
 		return fmt.Sprintf("#%d", v.Int)
 	case *machine.BoolConst:
@@ -137,22 +137,22 @@ func operand(w io.Writer, frameSize int, v machine.Value) string {
 	default:
 		panic(fmt.Sprintf("undefined value: %T %+v", v, v))
 	case *machine.ArgReg:
-		return fmt.Sprintf("X%d", v.ID)
+		return ArgRegister(v.ID)
 	case *machine.FP:
 		t := tmp()
 		defer free(t)
 
-		fmt.Fprintf(w, "\tSUB X%d, X29, #%d\n", t, frameSize)
-		return fmt.Sprintf("X%d", t)
+		fmt.Fprintf(w, "\tSUB x%d, x29, #%d\n", t, frameSize)
+		return fmt.Sprintf("x%d", t)
 	case *machine.Reg:
-		return fmt.Sprintf("%s%d", regsize(v.Size), v.ID)
+		return fmt.Sprintf("%s%s", regSize(v.Size), CalleeSavedRegister(v.ID)[1:])
 	case *machine.IntConst:
 		if v.Int >= 4096 {
 			t := tmp()
 			defer free(t)
 
-			emitMOV(w, fmt.Sprintf("X%d", t), v.Int)
-			return fmt.Sprintf("X%d", t)
+			emitMOV(w, fmt.Sprintf("x%d", t), v.Int)
+			return fmt.Sprintf("x%d", t)
 		}
 		return fmt.Sprintf("#%d", v.Int)
 	case *machine.BoolConst:
@@ -165,19 +165,25 @@ func operand(w io.Writer, frameSize int, v machine.Value) string {
 	}
 }
 
-func regsize(s machine.RegisterSize) string {
+func (a *AARCH) threeOp(w io.Writer, operands []machine.Value) (string, string, string) {
+	return operand(w, a.frameSize, operands[0]),
+		operand(w, a.frameSize, operands[1]),
+		operand(w, a.frameSize, operands[2])
+}
+
+func regSize(s machine.RegisterSize) string {
 	switch s {
 	default:
-		return "X"
+		return "x"
 		panic(fmt.Sprintf("undefined size: %T %+v", s, s))
 	case machine.INT8:
-		return "W"
+		return "w"
 	case machine.INT16:
-		return "W"
+		return "w"
 	case machine.INT32:
-		return "W"
+		return "w"
 	case machine.INT64:
-		return "X"
+		return "x"
 	}
 }
 
@@ -237,6 +243,7 @@ func emitMOV(w io.Writer, reg string, val int64) {
 		fmt.Fprintf(w, "\tMOV %s, #%d\n", reg, val)
 		return
 	}
+
 	first := true
 	for shift := 0; shift < 64; shift += 16 {
 		chunk := (val >> shift) & 0xFFFF
@@ -244,13 +251,14 @@ func emitMOV(w io.Writer, reg string, val int64) {
 			continue
 		}
 		if first {
-			fmt.Fprintf(w, "\tMOVZ %s, #0x%X, LSL #%d\n", reg, chunk, shift)
+			fmt.Fprintf(w, "\tMOVZ %s, #%#x, LSL #%d\n", reg, chunk, shift)
 			first = false
 		} else {
-			fmt.Fprintf(w, "\tMOVK %s, #0x%X, LSL #%d\n", reg, chunk, shift)
+			fmt.Fprintf(w, "\tMOVK %s, #%#x, LSL #%d\n", reg, chunk, shift)
 		}
 	}
-	if first { // val == 0
+
+	if first {
 		fmt.Fprintf(w, "\tMOV %s, #0\n", reg)
 	}
 }

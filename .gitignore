@@ -1,5 +1,6 @@
 main
 main.loh
+main2.loh
 main.o
 main.s
 objdump.txt

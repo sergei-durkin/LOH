@@ -166,7 +166,6 @@ func (t *Tac) parseFn(fn *ast.FnDecl) {
 
 				size: int(args[i].Size()),
 			})
-			fmt.Println(args[i].Size(), args[i].Name())
 			regs++
 
 			continue
@@ -790,7 +789,7 @@ func (t *Tac) parseUnaryOpExpr(expr *ast.UnaryOp) Value {
 			t.code = append(t.code, &Assign{
 				target: tmp,
 				arg1:   r,
-				op:     token.STAR,
+				op:     token.XOR,
 				arg2:   &IntConst{int: -1},
 
 				size: -1,

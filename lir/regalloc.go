@@ -220,23 +220,9 @@ func (f *Fn) regalloc() {
 	stpdedup := make(map[machine.PhysicalRegister]struct{})
 
 	free := []machine.PhysicalRegister{
-		// 0: 31,
-		// 1: 30, LP
-		// 2: 29, FP
-
-		28, 27, 26, 25,
-		24, 23, 22, 21,
-		20, 19,
-
-		// 13: 18, APPLE SYS RESERVED
-		// 14: 17, 15: 16, // IP0/IP1
-
-		// 16: 15, 17: 14, 18: 13, // TMP
-		// 19: 12, 20: 11, 21: 10, // Можно юзать, но уничтожаются при BL
-		// 22: 9,
-
-		// 23: 8, // IND
-		// 24: 7, 25: 6, 26: 5, 27: 4, 28: 3, 29: 2, 30: 1, 31: 0, // ARGS
+		0, 1, 2, 3,
+		4, 5, 6, 7,
+		8, 9,
 	}
 
 	ranges := make([]*liveRange, 0, len(liveness))
